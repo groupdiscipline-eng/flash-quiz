@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcard Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --primary:#3457ef; --primary-dark:#233fc7; --accent:#8b5cf6;
+  --bg:#f3f5fb; --surface:#ffffff; --surface-2:#f7f8fd;
+  --text:#151a2d; --muted:#6b7280; --border:#e6e9f4;
+  --success:#16a34a; --success-bg:#e9f9ef; --danger:#dc2626; --danger-bg:#fdecec;
+  --warn:#d97706; --warn-bg:#fef3e0;
+  --shadow: 0 1px 2px rgba(20,25,50,.04), 0 6px 20px rgba(20,25,50,.06);
+  --radius:14px;
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11131f; --surface:#181b2b; --surface-2:#1f2338;
+    --text:#eef0fb; --muted:#9aa0bd; --border:#2a2f47;
+    --success-bg:#123322; --danger-bg:#3a1a1a; --warn-bg:#3a2a10;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11131f; --surface:#181b2b; --surface-2:#1f2338;
+  --text:#eef0fb; --muted:#9aa0bd; --border:#2a2f47;
+  --success-bg:#123322; --danger-bg:#3a1a1a; --warn-bg:#3a2a10;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:'Sora',system-ui,sans-serif;margin:0;letter-spacing:-.01em;}
+p{margin:0;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+
+.hidden{display:none !important;}
+.wrap-x{overflow-x:auto;}
+
+/* ---------- Auth pages ---------- */
+.auth-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:36px 32px;width:100%;max-width:400px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;}
+.brand .name{font-family:'Sora';font-weight:700;font-size:18px;}
+.brand .name span{color:var(--primary);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--muted);}
+.field input{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14.5px;outline:none;transition:border-color .15s;}
+.field input:focus{border-color:var(--primary);}
+.field-pw{position:relative;}
+.field-pw button{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:4px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14.5px;transition:transform .08s, filter .15s;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--primary);color:#fff;width:100%;}
+.btn-primary:hover{filter:brightness(1.08);}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);width:100%;}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:8px;}
+.btn-danger{background:var(--danger-bg);color:var(--danger);}
+.btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.err-msg{background:var(--danger-bg);color:var(--danger);font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:14px;font-weight:500;}
+.ok-msg{background:var(--success-bg);color:var(--success);font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:14px;font-weight:500;}
+.divider-txt{text-align:center;color:var(--muted);font-size:12.5px;margin:14px 0;position:relative;}
+.link-btn{background:none;border:none;color:var(--primary);font-weight:600;font-size:13.5px;padding:0;}
+.muted-link{color:var(--muted);font-size:13.5px;}
+.center-txt{text-align:center;}
+.perk{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);margin-bottom:8px;}
+.perk .dot{width:18px;height:18px;border-radius:50%;background:var(--success-bg);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex:none;}
+
+/* ---------- App shell ---------- */
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);flex:none;padding:18px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar .brand{padding:4px 6px 18px;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);margin-bottom:2px;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.nav-item .ic{width:18px;text-align:center;}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--primary);color:#fff;font-weight:600;}
+.nav-sep{height:1px;background:var(--border);margin:12px 4px;}
+.nav-logout{margin-top:auto;color:var(--danger);}
+.nav-logout:hover{background:var(--danger-bg);}
+
+.main{flex:1;min-width:0;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:5;}
+.topbar .search{flex:1;max-width:340px;position:relative;}
+.topbar .search input{width:100%;padding:9px 12px 9px 34px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13.5px;outline:none;}
+.topbar .search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;}
+.topbar-user{display:flex;align-items:center;gap:10px}.school-fb-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:22px;background:#1877f2;color:#fff!important;text-decoration:none;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(24,119,242,.25);white-space:nowrap;transition:.2s}.school-fb-btn:hover{transform:translateY(-1px);background:#166fe5}.school-fb-icon{width:22px;height:22px;border-radius:50%;background:#fff;color:#1877f2;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800}@media(max-width:700px){.school-fb-btn{padding:7px 9px;font-size:11px;gap:5px}.school-fb-icon{width:20px;height:20px;font-size:14px}.topbar-user{gap:6px}.topbar-user>span{font-size:11px!important}}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none;}
+.page{padding:26px;max-width:1180px;}
+.page-head{margin-bottom:20px;}
+.page-head h1{font-size:22px;}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+.pad{padding:20px;}
+.grid{display:grid;gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+@media(max-width:600px){.grid-4{grid-template-columns:1fr 1fr;}}
+
+.stat-card{display:flex;flex-direction:column;gap:10px;}
+.stat-card .icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.stat-card .num{font-size:24px;font-weight:800;font-family:'Sora';}
+.stat-card .lbl{font-size:12.5px;color:var(--muted);font-weight:600;}
+
+.section-title{font-size:15px;font-weight:700;margin-bottom:12px;}
+.action-tile{border:1.5px dashed var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;cursor:pointer;background:var(--surface-2);transition:border-color .15s;}
+.action-tile:hover{border-color:var(--primary);}
+.action-tile .icon{width:34px;height:34px;border-radius:9px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);}
+.action-tile b{font-size:14px;}
+.action-tile span{font-size:12.5px;color:var(--muted);}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:700px){.form-row{grid-template-columns:1fr;}}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.tag-easy{background:var(--success-bg);color:var(--success);}
+.tag-medium{background:var(--warn-bg);color:var(--warn);}
+.tag-hard{background:var(--danger-bg);color:var(--danger);}
+.tag-blue{background:#e6ebff;color:var(--primary);}
+:root[data-theme="dark"] .tag-blue{background:#232a55;}
+
+.q-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--surface-2);}
+.q-card .qh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;}
+.opt-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.opt-row input[type=text]{flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13.5px;}
+.opt-radio{width:16px;height:16px;flex:none;}
+
+.dropzone{border:2px dashed var(--border);border-radius:14px;padding:44px 20px;text-align:center;background:var(--surface-2);cursor:pointer;transition:border-color .15s,background .15s;}
+.dropzone.drag{border-color:var(--primary);background:#eef1ff;}
+.dropzone .icon{font-size:34px;margin-bottom:10px;}
+.progress-bar{height:8px;background:var(--border);border-radius:6px;overflow:hidden;margin-top:10px;}
+.progress-bar > div{height:100%;background:var(--primary);border-radius:6px;transition:width .2s;}
+
+.quiz-opt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--border);border-radius:11px;padding:13px 15px;margin-bottom:10px;cursor:pointer;font-size:14.5px;transition:border-color .15s,background .15s;}
+.quiz-opt:hover{border-color:var(--primary);}
+.quiz-opt.selected{border-color:var(--primary);background:#eef1ff;}
+:root[data-theme="dark"] .quiz-opt.selected{background:#1c2350;}
+.quiz-opt.correct{border-color:var(--success);background:var(--success-bg);}
+.quiz-opt.incorrect{border-color:var(--danger);background:var(--danger-bg);}
+.opt-letter{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex:none;}
+
+.donut{width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;flex:none;}
+.donut .inner{width:112px;height:112px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.donut .inner b{font-size:26px;font-family:'Sora';}
+.donut .inner span{font-size:11.5px;color:var(--muted);}
+
+.flip-card{width:100%;max-width:460px;height:260px;margin:0 auto;perspective:1200px;}
+.flip-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d;cursor:pointer;}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;align-items:center;justify-content:center;padding:26px;text-align:center;font-size:18px;font-weight:600;font-family:'Sora';}
+.flip-front{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;}
+.flip-back{background:var(--surface-2);border:1.5px solid var(--border);color:var(--text);transform:rotateY(180deg);font-weight:500;font-size:16px;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;text-transform:none;padding:10px 12px;border-bottom:1px solid var(--border);}
+td{padding:12px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+
+  .toggle{width:42px;height:24px;border-radius:20px;background:var(--border);position:relative;cursor:pointer;flex:none;border:none;}
+.toggle.on{background:var(--primary);}
+.toggle .knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .15s;}
+.toggle.on .knob{left:21px;}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--text);color:var(--bg);padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);z-index:200;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+.empty{text-align:center;padding:44px 20px;color:var(--muted);}
+.empty .icon{font-size:36px;margin-bottom:10px;}
+
+.modal-bg{position:fixed;inset:0;background:rgba(10,12,25,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal{background:var(--surface);border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow);}
+
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.icon-btn:hover{color:var(--text);border-color:var(--primary);}
+.pill-btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:600;color:var(--text);}
+.pill-btn:hover{border-color:var(--primary);color:var(--primary);}
+
+@media(max-width:820px){
+  .sidebar{position:fixed;left:-240px;z-index:50;transition:left .2s;box-shadow:var(--shadow);}
+  .sidebar.open{left:0;}
+  .page{padding:16px;}
+  .topbar{padding:12px 16px;}
+}
+</style>
+
+<meta property="og:title" content="Flashcard Quiz">
+<meta property="og:description" content="Create and take quizzes easily with Flashcard Quiz.">
+<meta property="og:image" content="https://groupdiscipline-eng.github.io/flash-cards-/preview.png">
+<meta property="og:url" content="https://groupdiscipline-eng.github.io/flash-cards-/">
+<meta property="og:type" content="website">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Flashcard Quiz">
+<meta name="twitter:description" content="Create and take quizzes easily with Flashcard Quiz.">
+
+
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAcnG084YsCM6sXosXUp4sIvQI77WXMOOE",
+  authDomain: "flashcardquiz-48db8.firebaseapp.com",
+  projectId: "flashcardquiz-48db8",
+  storageBucket: "flashcardquiz-48db8.firebasestorage.app",
+  messagingSenderId: "495479281928",
+  appId: "1:495479281928:web:f742c910b282e83cfd74bd",
+  measurementId: "G-GB5SLNVQSW"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const firestore = getFirestore(firebaseApp);
+/* =========================================================
+   FLASHCARD QUIZ — full client-side app
+   "Database" = localStorage (per browser). AI generation uses
+   the Claude "sample" runtime capability when available, with
+   a rule-based fallback so quiz creation always works.
+========================================================= */
+
+/* ---------------- storage helpers ---------------- */
+const DB_KEYS = { USERS:'fq_users', SESSION:'fq_session', QUIZZES:'fq_quizzes', DECKS:'fq_decks', HISTORY:'fq_history', THEME:'fq_theme', SETTINGS:'fq_settings' };
+function dbGet(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : (fallback ?? null); }catch(e){ return fallback ?? null; } }
+function dbSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
+function uid(prefix){ return (prefix||'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function nowISO(){ return new Date().toISOString(); }
+function fmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function simpleHash(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0; } return 'h'+h; }
+
+function getUsers(){ return dbGet(DB_KEYS.USERS, []); }
+function saveUsers(u){ dbSet(DB_KEYS.USERS, u); }
+function getSession(){ return dbGet(DB_KEYS.SESSION, null); }
+function setSession(userId){ if(userId){ localStorage.setItem('fq_firebase_uid',userId); }else{ localStorage.removeItem('fq_firebase_uid'); localStorage.removeItem('fq_firebase_profile'); } }
+function currentUser(){ const uid = localStorage.getItem('fq_firebase_uid'); if(!uid) return null; const cached = dbGet('fq_firebase_profile', null); return cached && cached.uid===uid ? {...cached,id:uid} : (auth.currentUser ? {id:uid,uid:uid,name:auth.currentUser.displayName||auth.currentUser.email?.split('@')[0]||'User',email:auth.currentUser.email||''} : null); }
+function getQuizzes(){ return dbGet(DB_KEYS.QUIZZES, []); }
+function saveQuizzes(q){ dbSet(DB_KEYS.QUIZZES, q); }
+function getDecks(){ return dbGet(DB_KEYS.DECKS, []); }
+function saveDecks(d){ dbSet(DB_KEYS.DECKS, d); }
+function getHistory(){ return dbGet(DB_KEYS.HISTORY, []); }
+function saveHistory(h){ dbSet(DB_KEYS.HISTORY, h); }
+function mySettings(){ return dbGet(DB_KEYS.SETTINGS, {emailNotif:true, quizReminders:false}); }
+function saveSettings(s){ dbSet(DB_KEYS.SETTINGS, s); }
+
+function myQuizzes(){ const u = currentUser(); if(!u) return []; return getQuizzes().filter(q=>q.ownerId===u.id).sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)); }
+function myDecks(){ const u = currentUser(); if(!u) return []; return getDecks().filter(d=>d.ownerId===u.id).sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)); }
+function myHistory(){ const u = currentUser(); if(!u) return []; return getHistory().filter(h=>h.ownerId===u.id).sort((a,b)=> new Date(b.date)-new Date(a.date)); }
+
+/* ---------------- theme ---------------- */
+function applyTheme(){ const t = dbGet(DB_KEYS.THEME,'system'); if(t==='light') document.documentElement.setAttribute('data-theme','light'); else if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); }
+applyTheme();
+
+/* ---------------- toast ---------------- */
+let toastTimer=null;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), 2400); }
+
+/* ---------------- router ---------------- */
+function go(hash){ window.location.hash = hash; }
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', render);
+
+/* ---------------- AI sample capability ---------------- */
+let sampleFn = null, sampleTried = false;
+async function getSampler(){
+  if(sampleTried) return sampleFn;
+  sampleTried = true;
+  try{
+    if(window.claude && window.claude.use){
+      const s = await window.claude.use('sample');
+      if(s) sampleFn = s;
+    }
+  }catch(e){ sampleFn = null; }
+  return sampleFn;
+}
+
+/* ---------------- pptx text extraction ---------------- */
+async function extractPptxText(file){
+  const zip = await JSZip.loadAsync(file);
+  const slideFiles = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n));
+  slideFiles.sort((a,b)=>{
+    const na = parseInt(a.match(/slide(\d+)\.xml/)[1]), nb = parseInt(b.match(/slide(\d+)\.xml/)[1]);
+    return na-nb;
+  });
+  const slides = [];
+  for(const name of slideFiles){
+    const xml = await zip.files[name].async('string');
+    const texts = [...xml.matchAll(/<a:t[^>]*>([^<]*)<\/a:t>/g)].map(m=>m[1]);
+    const joined = texts.join(' ').replace(/\s+/g,' ').trim();
+    if(joined) slides.push(joined);
+  }
+  return slides;
+}
+
+/* ---------------- rule-based quiz generator (fallback) ---------------- */
+const STOPWORDS = new Set(['the','a','an','is','are','was','were','of','in','on','at','to','for','and','or','with','by','as','that','this','it','be','from','which','their','its','has','have','had','will','can','also','into','than','these','those','such','not','but','all','more','most','other','some','then','so','if','because']);
+function pickKeyword(sentence){
+  const words = sentence.replace(/[^a-zA-Z0-9\s\-]/g,'').split(/\s+/).filter(w=>w.length>3 && !STOPWORDS.has(w.toLowerCase()));
+  if(!words.length) return null;
+  words.sort((a,b)=> b.length-a.length);
+  return words[0];
+}
+function shuffleArr(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function ruleBasedQuiz(slideTexts, count, difficulty){
+  const allText = slideTexts.join(' ');
+  const sentences = allText.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>25 && s.length<200);
+  const allWords = [...new Set(allText.replace(/[^a-zA-Z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>4 && !STOPWORDS.has(w.toLowerCase())))];
+  const questions = [];
+  const used = new Set();
+  for(const s of shuffleArr(sentences)){
+    if(questions.length>=count) break;
+    const kw = pickKeyword(s);
+    if(!kw || used.has(kw.toLowerCase())) continue;
+    used.add(kw.toLowerCase());
+    const blanked = s.replace(new RegExp('\\b'+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b'),'_____');
+    if(blanked===s) continue;
+    let distractors = shuffleArr(allWords.filter(w=>w.toLowerCase()!==kw.toLowerCase())).slice(0,3);
+    while(distractors.length<3) distractors.push('None of these');
+    const options = shuffleArr([kw, ...distractors]);
+    questions.push({ id:uid('q'), text:`Fill in the blank: "${blanked}"`, options, answerIndex: options.indexOf(kw), difficulty: difficulty||'Medium' });
+  }
+     // pad with slide-topic questions if not enough
+  let i=0;
+  while(questions.length<count && slideTexts.length){
+    const t = slideTexts[i % slideTexts.length];
+    const kw = pickKeyword(t);
+    if(kw){
+      const distractors = shuffleArr(allWords.filter(w=>w.toLowerCase()!==kw.toLowerCase())).slice(0,3);
+      while(distractors.length<3) distractors.push('None of these');
+      const options = shuffleArr([kw, ...distractors]);
+      questions.push({ id:uid('q'), text:`Which term relates most to: "${t.slice(0,80)}${t.length>80?'…':''}"`, options, answerIndex: options.indexOf(kw), difficulty: difficulty||'Medium' });
+    }
+    i++;
+    if(i>slideTexts.length*3) break;
+  }
+  return questions.slice(0,count);
+                                    }
+
+    async function aiGenerateQuiz(contextText, topic, count, difficulty){
+  const sampler = await getSampler();
+  if(!sampler) return null;
+  const prompt = `You are a quiz generator for a flashcard/quiz study app. Based on the following material, generate exactly ${count} multiple-choice questions at ${difficulty||'Medium'} difficulty. Topic/context: ${topic||'(see material)'}.
+
+MATERIAL:
+"""${(contextText||'').slice(0,6000)}"""
+
+Respond with ONLY a raw JSON array (no markdown fences, no commentary) where each item is:
+{"text": "question text", "options": ["opt1","opt2","opt3","opt4"], "answerIndex": 0}
+answerIndex is the 0-based index of the correct option in "options". Make questions clear and unambiguous, options plausible, only one correct answer.`;
+  try{
+    const res = await sampler(prompt, { modelTier:'default' });
+    let txt = (res && res.text) ? res.text.trim() : '';
+    txt = txt.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+    const jsonMatch = txt.match(/\[[\s\S]*\]/);
+    const arr = JSON.parse(jsonMatch ? jsonMatch[0] : txt);
+    return arr.map(q => ({ id:uid('q'), text:q.text, options:q.options, answerIndex:q.answerIndex, difficulty: difficulty||'Medium' })).filter(q=>q.text && Array.isArray(q.options) && q.options.length>=2);
+  }catch(e){
+    return null;
+  }
+}
+
+/* ---------------- app state ---------------- */
+let quizRuntime = null; // {quiz, index, answers[], startedAt, elapsed}
+let quizTimerInt = null;
+let deckRuntime = null; // {deck, index, flipped}
+let pptSlides = null;
+let pptFileName = '';
+
+/* ================= RENDER ROUTER ================= */
+function render(){
+  const hash = window.location.hash.replace('#','') || (currentUser() ? '/dashboard' : '/login');
+  const user = currentUser();
+  if(!user && !['/login','/register','/forgot'].includes(hash.split('?')[0])){
+    go('/login'); return;
+  }
+  if(user && ['/login','/register','/forgot'].includes(hash)){ go('/dashboard'); return; }
+
+  const [path, param] = hash.split('?');
+  const app = document.getElementById('app');
+
+  if(path==='/login') return renderAuthShell(loginView());
+  if(path==='/register') return renderAuthShell(registerView());
+  if(path==='/forgot') return renderAuthShell(forgotView());
+
+  // authenticated app shell
+  let body = '';
+  if(path==='/dashboard') body = dashboardView();
+  else if(path==='/create-manual') body = createManualView(param);
+  else if(path==='/generate-ai') body = generateAiView();
+  else if(path==='/upload-ppt') body = uploadPptView();
+  else if(path==='/my-quizzes') body = myQuizzesView();
+  else if(path==='/quiz-play') body = quizPlayView(param);
+  else if(path==='/quiz-results') body = quizResultsView();
+  else if(path==='/quiz-review') body = quizReviewView(param);
+  else if(path==='/flashcards') body = flashcardsListView();
+  else if(path==='/flashcards-study') body = flashcardsStudyView(param);
+  else if(path==='/history') body = historyView();
+  else if(path==='/profile') body = profileView();
+  else if(path==='/settings') body = settingsView();
+  else body = dashboardView();
+
+  app.innerHTML = appShell(path, body);
+  bindGlobalHandlers();
+  bindPageHandlers(path);
+}
+
+function renderAuthShell(inner){
+  document.getElementById('app').innerHTML = `<div class="auth-shell">${inner}</div>`;
+  bindAuthHandlers();
+}
+
+/* ================= AUTH VIEWS ================= */
+function brandHtml(big){
+  return `<div class="brand"><div class="logo">🃏</div><div class="name">Flashcard <span>Quiz</span></div></div>`;
+}
+function loginView(){
+  return `<div class="auth-card">
+    ${brandHtml()}
+    <h1 style="font-size:22px;margin-bottom:6px;">Welcome back!</h1>
+    <p style="color:var(--muted);font-size:13.5px;margin-bottom:20px;">Log in to continue your learning journey.</p>
+    <div id="authMsg"></div>
+    <form id="loginForm">
+      <div class="field"><label>Username or Email</label><input type="text" id="li_user" placeholder="Enter your username or email" required></div>
+      <div class="field"><label>Password</label>
+        <div class="field-pw"><input type="password" id="li_pass" placeholder="Enter your password" required><button type="button" data-toggle="li_pass">Show</button></div>
+      </div>
+      <div style="text-align:right;margin-bottom:16px;"><button type="button" class="link-btn" onclick="go('/forgot')">Forgot password?</button></div>
+      <button class="btn btn-primary" type="submit">Log In</button>
+    </form>
+    <div class="divider-txt">or</div>
+    <button class="btn btn-outline" onclick="go('/register')">Create a new account</button>
+  </div>`;
+}
+function registerView(){
+  return `<div class="auth-card">
+    ${brandHtml()}
+    <h1 style="font-size:22px;margin-bottom:6px;">Create Your Account</h1>
+    <p style="color:var(--muted);font-size:13.5px;margin-bottom:16px;">Join Flashcard Quiz and start building your knowledge today!</p>
+    <div class="perk"><div class="dot">✓</div> Create quizzes</div>
+    <div class="perk"><div class="dot">✓</div> Use flashcards</div>
+    <div class="perk" style="margin-bottom:16px;"><div class="dot">✓</div> Track your progress</div>
+    <div id="authMsg"></div>
+    <form id="registerForm">
+      <div class="field"><label>Full Name</label><input type="text" id="r_name" placeholder="Enter full name" required></div>
+      <div class="field"><label>Username</label><input type="text" id="r_user" placeholder="Choose a username" required></div>
+      <div class="field"><label>Email address</label><input type="email" id="r_email" placeholder="Enter your email" required></div>
+      <div class="field"><label>Password</label>
+        <div class="field-pw"><input type="password" id="r_pass" placeholder="Create a password" required><button type="button" data-toggle="r_pass">Show</button></div>
+      </div>
+      <div class"field"><label>Confirm Password</label>
+        <div class="field-pw"><input type="password" id="r_pass2" placeholder="Confirm your password" required><button type="button" data-toggle="r_pass2">Show</button></div>
+      </div>
+      <button class="btn btn-primary" type="submit">Create Account</button>
+    </form>
+    <p class="center-txt" style="margin-top:14px;"><button class="link-btn" onclick="go('/login')">Back to Login</button></p>
+  </div>`;
+}
+function forgotView(){
+  return `<div class="auth-card">
+    ${brandHtml()}
+    <h1 style="font-size:20px;margin-bottom:6px;">Reset Your Password</h1>
+    <p style="color:var(--muted);font-size:13.5px;margin-bottom:18px;">Enter your email address and we'll help you reset your password.</p>
+    <div id="authMsg"></div>
+    <form id="forgotForm">
+      <div class="field"><label>Email address</label><input type="email" id="f_email" placeholder="Enter your email" required></div>
+      <div id="resetFields" class="hidden">
+        <div class="field"><label>New Password</label><input type="password" id="f_pass1" placeholder="New password"></div>
+        <div class="field"><label>Confirm New Password</label><input type="password" id="f_pass2" placeholder="Confirm new password"></div>
+      </div>
+      <button class="btn btn-primary" type="submit" id="forgotBtn">Send Reset Link</button>
+    </form>
+    <p class="center-txt" style="margin-top:14px;"><button class="link-btn" onclick="go('/login')">Back to Login</button></p>
+  </div>`;
+}
+function bindAuthHandlers(){
+
+  document.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const inp = document.getElementById(btn.dataset.toggle);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+    });
+  });
+
+  /* ================= LOGIN ================= */
+
+  const lf = document.getElementById('loginForm');
+
+  if(lf) lf.addEventListener('submit', async e=>{
+    e.preventDefault();
+
+    const identifier = document
+      .getElementById('li_user')
+      .value
+      .trim()
+      .toLowerCase();
+
+    const pass = document.getElementById('li_pass').value;
+    const msg = document.getElementById('authMsg');
+
+    msg.innerHTML = `<div class="ok-msg">Logging in...</div>`;
+
+    try{
+
+      let email = identifier;
+
+      /* Login using username */
+      if(!identifier.includes('@')){
+
+        const q = query(
+          collection(firestore, 'users'),
+          where('usernameLower', '==', identifier)
+        );
+
+        const snapshot = await getDocs(q);
+
+        if(snapshot.empty){
+          msg.innerHTML =
+            `<div class="err-msg">Username not found.</div>`;
+          return;
+        }
+
+        email = snapshot.docs[0].data().email;
+      }
+
+      const credential =
+        await signInWithEmailAndPassword(auth, email, pass);
+
+      const user = credential.user;
+
+      localStorage.setItem('fq_firebase_uid', user.uid);
+
+      msg.innerHTML = '';
+
+      toast('Welcome back!');
+
+      go('/dashboard');
+
+    }catch(error){
+
+      console.error(error);
+
+      msg.innerHTML =
+        `<div class="err-msg">Incorrect username/email or password.</div>`;
+    }
+
+  });
+
+
+  /* ================= REGISTER ================= */
+
+  const rf = document.getElementById('registerForm');
+
+  if(rf) rf.addEventListener('submit', async e=>{
+    e.preventDefault();
+
+    const name =
+      document.getElementById('r_name').value.trim();
+
+    const username =
+      document.getElementById('r_user').value.trim();
+
+    const email =
+      document.getElementById('r_email').value.trim().toLowerCase();
+
+    const pass =
+      document.getElementById('r_pass').value;
+
+    const pass2 =
+      document.getElementById('r_pass2').value;
+
+    const msg =
+      document.getElementById('authMsg');
+
+    if(pass !== pass2){
+      msg.innerHTML =
+        `<div class="err-msg">Passwords do not match.</div>`;
+      return;
+    }
+
+    if(pass.length < 6){
+      msg.innerHTML =
+        `<div class="err-msg">Password must be at least 6 characters.</div>`;
+      return;
+    }
+
+    if(username.length < 3){
+      msg.innerHTML =
+        `<div class="err-msg">Username must be at least 3 characters.</div>`;
+      return;
+    }
+
+    msg.innerHTML =
+      `<div class="ok-msg">Creating account...</div>`;
+
+    try{
+
+      /* Check username first */
+
+      const usernameQuery = query(
+        collection(firestore, 'users'),
+        where('usernameLower', '==', username.toLowerCase())
+      );
+
+      const usernameSnapshot =
+        await getDocs(usernameQuery);
+
+      if(!usernameSnapshot.empty){
+
+        msg.innerHTML =
+          `<div class="err-msg">Username already taken.</div>`;
+
+        return;
+      }
+
+      /* Create Firebase Authentication account */
+
+      const credential =
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          pass
+        );
+
+      const user = credential.user;
+
+      /* Save profile in Firestore */
+
+      await setDoc(
+        doc(firestore, 'users', user.uid),
+        {
+          uid: user.uid,
+          name: name,
+          username: username,
+          usernameLower: username.toLowerCase(),
+          email: email,
+          createdAt: new Date().toISOString()
+        }
+      );
+
+      localStorage.setItem(
+        'fq_firebase_uid',
+        user.uid
+      );
+
+      msg.innerHTML = '';
+
+      toast('Account created! Welcome to Flashcard Quiz.');
+
+      go('/dashboard');
+
+    }catch(error){
+
+      console.error(error);
+
+      let message =
+        'Unable to create account.';
+
+      if(error.code === 'auth/email-already-in-use'){
+        message = 'Email is already registered.';
+      }
+
+      if(error.code === 'auth/invalid-email'){
+        message = 'Invalid email address.';
+      }
+
+      if(error.code === 'auth/weak-password'){
+        message = 'Password is too weak.';
+      }
+
+      msg.innerHTML =
+        `<div class="err-msg">${message}</div>`;
+    }
+
+  });
+
+
+  /* ================= FORGOT PASSWORD ================= */
+
+  const ff = document.getElementById('forgotForm');
+
+  if(ff) ff.addEventListener('submit', async e=>{
+    e.preventDefault();
+
+    const email =
+      document.getElementById('f_email')
+      .value
+      .trim()
+      .toLowerCase();
+
+    const msg =
+      document.getElementById('authMsg');
+
+    const btn =
+      document.getElementById('forgotBtn');
+
+    try{
+
+      await sendPasswordResetEmail(
+        auth,
+        email
+      );
+
+      msg.innerHTML =
+        `<div class="ok-msg">
+          Password reset link sent to your email.
+        </div>`;
+
+      btn.textContent = 'Reset Email Sent';
+
+    }catch(error){
+
+      console.error(error);
+
+      msg.innerHTML =
+        `<div class="err-msg">
+          Unable to send reset email. Check the email address.
+        </div>`;
+    }
+
+  });
+}
+
+/* ================= APP SHELL ================= */
+function navItems(){
+  return [
+    {p:'/dashboard', ic:'📊', label:'Dashboard'},
+    {p:'/create-manual', ic:'✏️', label:'Create Quiz'},
+    {p:'/my-quizzes', ic:'📚', label:'My Quizzes'},
+    {p:'/flashcards', ic:'🗂️', label:'Flashcards'},
+    {p:'/history', ic:'🕘', label:'History'},
+    {p:'/profile', ic:'👤', label:'Profile'},
+    {p:'/settings', ic:'⚙️', label:'Settings'},
+  ];
+}
+function appShell(activePath, bodyHtml){
+  const u = currentUser();
+  const initials = (u.name||'?').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  const nav = navItems().map(n=>`<button class="nav-item ${activePath===n.p?'active':''}" data-nav="${n.p}"><span class="ic">${n.ic}</span> ${n.label}</button>`).join('');
+  return `
+  <div class="shell">
+    <div class="sidebar" id="sidebar">
+      ${brandHtml()}
+      ${nav}
+      <div class="nav-sep"></div>
+      <button class="nav-item nav-logout" id="logoutBtn"><span class="ic">🚪</span> Logout</button>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <button class="icon-btn" id="menuToggle" style="display:none;">☰</button>
+        <div class="search"><span class="ic">🔍</span><input placeholder="Search anything..." id="globalSearch"></div>
+        <div class="topbar-user">
+  <a class="school-fb-btn" href="https://www.facebook.com/share/1DfEnQi5Jx/" target="_blank" rel="noopener noreferrer">
+    <span class="school-fb-icon">f</span> School Page ↗
+  </a>
+  <span style="font-size:13px;font-weight:600;">${escapeHtml(u.name)}</span>
+  <div class="avatar">${initials}</div>
+</div>
+      </div>
+      <div class="page">${bodyHtml}</div>
+    </div>
+  </div>`;
+}
+function bindGlobalHandlers(){
+  document.querySelectorAll('[data-nav]').forEach(b=> b.addEventListener('click', ()=> go(b.dataset.nav)));
+  const lo = document.getElementById('logoutBtn');
+  if(lo) lo.addEventListener('click', ()=>{ setSession(null); toast('Logged out.'); go('/login'); });
+  const mt = document.getElementById('menuToggle');
+  if(mt) mt.addEventListener('click', ()=> document.getElementById('sidebar').classList.toggle('open'));
+  if(window.innerWidth<=820 && mt) mt.style.display='flex';
+  const gs = document.getElementById('globalSearch');
+  if(gs) gs.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      const q = gs.value.trim().toLowerCase();
+      if(!q) return;
+      const hit = myQuizzes().find(z=>z.title.toLowerCase().includes(q));
+      if(hit) go('/quiz-review?'+hit.id); else toast('No quiz found matching "'+gs.value+'"');
+    }
+  });
+}
+
+/* ================= DASHBOARD ================= */
+function dashboardView(){
+  const u = currentUser();
+  const quizzes = myQuizzes();
+  const hist = myHistory();
+  const decks = myDecks();
+  const totalQuizzes = quizzes.length;
+  const totalQuestions = quizzes.reduce((s,q)=> s+q.questions.length, 0);
+  const completed = hist.length;
+  const avgScore = completed ? Math.round(hist.reduce((s,h)=> s+h.percentage,0)/completed) : 0;
+  return `
+  <div class="page-head"><h1>Welcome back, ${escapeHtml(u.name)}!</h1><p>Keep going! Every quiz brings you closer to your goals.</p></div>
+  <div class="grid grid-4" style="margin-bottom:26px;">
+    ${statCard('📘', totalQuizzes, 'Total Quizzes', '#e6ebff', 'var(--primary)')}
+    ${statCard('❓', totalQuestions, 'Questions Created', '#fdeee0', '#d97706')}
+    ${statCard('✅', completed, 'Quizzes Completed', '#e9f9ef', 'var(--success)')}
+    ${statCard('⭐', avgScore+'%', 'Average Score', '#f3e9fe', 'var(--accent)')}
+  </div>
+  <div class="section-title">Get Started</div>
+  <div class="grid grid-3" style="margin-bottom:26px;">
+    <div class="action-tile" data-nav="/upload-ppt"><div class="icon">📤</div><b>Upload PowerPoint</b><span>Turn your slides into a quiz</span></div>
+    <div class="action-tile" data-nav="/create-manual"><div class="icon">✏️</div><b>Create Manually</b><span>Build your own quiz</span></div>
+    <div class="action-tile" data-nav="/generate-ai"><div class="icon">✨</div><b>Generate with AI</b><span>Let AI create questions for you</span></div>
+  </div>
+  ${hist.length? `<div class="section-title">Recent Activity</div>
+  <div class="card pad wrap-x"><table><tr><th>Quiz</th><th>Date</th><th>Score</th><th>%</th></tr>
+  ${hist.slice(0,5).map(h=>`<tr><td>${escapeHtml(h.quizTitle)}</td><td>${fmtDate(h.date)}</td><td>${h.correct}/${h.total}</td><td><span class="tag ${h.percentage>=70?'tag-easy':h.percentage>=50?'tag-medium':'tag-hard'}">${h.percentage}%</span></td></tr>`).join('')}
+  </table></div>` : `<div class="card"><div class="empty"><div class="icon">🎯</div><p>No quiz activity yet. Start by creating or uploading a quiz above!</p></div></div>`}
+  `;
+}
+function statCard(icon, num, lbl, bg, fg){
+  return `<div class="card pad stat-card"><div class="icon" style="background:${bg};color:${fg};">${icon}</div><div class="num">${num}</div><div class="lbl">${lbl}</div></div>`;
+        }
+
+    /* ================= CREATE QUIZ MANUALLY ================= */
+let manualQuestions = [];
+function createManualView(editId){
+  manualQuestions = [];
+  let editing = null;
+  if(editId){ editing = getQuizzes().find(q=>q.id===editId); if(editing) manualQuestions = JSON.parse(JSON.stringify(editing.questions)); }
+  return `
+  <div class="page-head"><h1>${editing?'Edit Quiz':'Create Quiz Manually'}</h1><p>Add your own questions and customize your quiz.</p></div>
+  <div class="grid" style="grid-template-columns:1.3fr .9fr;gap:20px;" id="manualGrid">
+    <div class="card pad">
+      <div class="form-row">
+        <div class="field"><label>Quiz Title</label><input id="mq_title" value="${editing?escapeHtml(editing.title):''}" placeholder="Enter quiz title"></div>
+        <div class="field"><label>Subject</label>
+          <select id="mq_subject">
+            ${['General','Math','Science','History','English','Programming','Other'].map(s=>`<option ${editing&&editing.subject===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Description</label><input id="mq_desc" value="${editing?escapeHtml(editing.description||''):''}" placeholder="Enter description"></div>
+      <div class="field"><label>Difficulty</label>
+        <select id="mq_diff">
+          ${['Easy','Medium','Hard'].map(s=>`<option ${editing&&editing.difficulty===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px;">
+        <div class="section-title" style="margin:0;">Questions (<span id="qCount">${manualQuestions.length}</span>)</div>
+        <button class="btn btn-primary btn-sm" id="addQBtn">+ Add Question</button>
+      </div>
+      <div id="questionsList"></div>
+    </div>
+    <div class="card pad" style="align-self:start;">
+      <div class="section-title">Actions</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Save your quiz once you have at least 1 question with a marked correct answer.</p>
+      <button class="btn btn-outline" id="previewBtn" style="margin-bottom:10px;">👁 Preview</button>
+      <button class="btn btn-primary" id="saveQuizBtn">💾 Save Quiz</button>
+    </div>
+  </div>
+  `;
+}
+function questionCardHtml(q, idx){
+  return `<div class="q-card" data-qid="${q.id}">
+    <div class="qh">
+      <input type="text" class="q-text-input" data-field="text" value="${escapeHtml(q.text)}" placeholder="Question ${idx+1}" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:14px;">
+      <button class="icon-btn del-q" title="Delete question">🗑</button>
+    </div>
+    ${q.options.map((opt,i)=>`
+      <div class="opt-row">
+        <input type="radio" class="opt-radio" name="correct_${q.id}" data-oidx="${i}" ${q.answerIndex===i?'checked':''}>
+        <input type="text" data-oidx="${i}" value="${escapeHtml(opt)}" placeholder="Option ${String.fromCharCode(65+i)}">
+      </div>`).join('')}
+  </div>`;
+}
+function refreshQuestionsList(){
+  document.getElementById('questionsList').innerHTML = manualQuestions.map((q,i)=>questionCardHtml(q,i)).join('') || `<div class="empty"><div class="icon">📝</div><p>No questions yet. Click "Add Question" to begin.</p></div>`;
+  document.getElementById('qCount').textContent = manualQuestions.length;
+  bindQuestionCardHandlers();
+}
+function bindQuestionCardHandlers(){
+  document.querySelectorAll('.q-card').forEach(card=>{
+    const qid = card.dataset.qid;
+    const q = manualQuestions.find(x=>x.id===qid);
+    card.querySelector('.q-text-input').addEventListener('input', e=> q.text = e.target.value);
+    card.querySelectorAll('.opt-row input[type=text]').forEach(inp=>{
+      inp.addEventListener('input', e=> q.options[+e.target.dataset.oidx] = e.target.value);
+    });
+    card.querySelectorAll('.opt-radio').forEach(r=>{
+      r.addEventListener('change', e=> q.answerIndex = +e.target.dataset.oidx);
+    });
+    card.querySelector('.del-q').addEventListener('click', ()=>{
+      manualQuestions = manualQuestions.filter(x=>x.id!==qid);
+      refreshQuestionsList();
+    });
+  });
+}
+function bindManualQuizHandlers(editId){
+  refreshQuestionsList();
+  document.getElementById('addQBtn').addEventListener('click', ()=>{
+    manualQuestions.push({ id:uid('q'), text:'', options:['','','',''], answerIndex:0 });
+    refreshQuestionsList();
+  });
+  document.getElementById('previewBtn').addEventListener('click', ()=>{
+    if(!manualQuestions.length){ toast('Add at least one question first.'); return; }
+    openPreviewModal(manualQuestions);
+  });
+  document.getElementById('saveQuizBtn').addEventListener('click', ()=>{
+    const title = document.getElementById('mq_title').value.trim();
+    if(!title){ toast('Please enter a quiz title.'); return; }
+    const cleaned = manualQuestions.filter(q=>q.text.trim() && q.options.every(o=>o.trim()));
+    if(!cleaned.length){ toast('Add at least one complete question.'); return; }
+    const u = currentUser();
+    const quizzes = getQuizzes();
+    if(editId){
+      const idx = quizzes.findIndex(q=>q.id===editId);
+      quizzes[idx] = {...quizzes[idx], title, subject:document.getElementById('mq_subject').value, description:document.getElementById('mq_desc').value, difficulty:document.getElementById('mq_diff').value, questions:cleaned };
+    } else {
+      quizzes.push({ id:uid('quiz'), ownerId:u.id, title, subject:document.getElementById('mq_subject').value, description:document.getElementById('mq_desc').value, difficulty:document.getElementById('mq_diff').value, questions:cleaned, createdAt: nowISO(), source:'manual' });
+    }
+    saveQuizzes(quizzes);
+    toast(editId? 'Quiz updated!' : 'Quiz saved!');
+    go('/my-quizzes');
+  });
+}
+function openPreviewModal(questions){
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg';
+  modal.innerHTML = `<div class="modal" style="max-width:520px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h3>Quiz Preview</h3><button class="icon-btn" id="closePreview">✕</button></div>
+    ${questions.map((q,i)=>`<div class="q-card"><b>${i+1}. ${escapeHtml(q.text||'(no text)')}</b>
+      ${q.options.map((o,idx)=>`<div class="quiz-opt ${idx===q.answerIndex?'correct':''}" style="cursor:default;"><span class="opt-letter">${String.fromCharCode(65+idx)}</span>${escapeHtml(o||'(empty)')}</div>`).join('')}
+    </div>`).join('')}
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  modal.querySelector('#closePreview').addEventListener('click', ()=> modal.remove());
+}
+
+/* ================= GENERATE WITH AI ================= */
+function generateAiView(){
+  return `
+  <div class="page-head"><h1>Generate with AI</h1><p>Describe a topic and let AI create quiz questions for you.</p></div>
+  <div class="card pad" style="max-width:640px;">
+    <div class="field"><label>Quiz Title</label><input id="ai_title" placeholder="e.g. Photosynthesis Basics"></div>
+    <div class="form-row">
+      <div class="field"><label>Topic / Subject</label><input id="ai_topic" placeholder="e.g. Photosynthesis, World War II, Algebra"></div>
+      <div class="field"><label>Difficulty</label><select id="ai_diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+    </div>
+    <div class="field"><label>Number of Questions</label><input id="ai_count" type="number" min="3" max="20" value="5"></div>
+    <div class="field"><label>Extra details (optional)</label><input id="ai_notes" placeholder="Any specifics to focus on"></div>
+    <button class="btn btn-primary" id="genAiBtn">✨ Generate Questions</button>
+    <p id="aiStatus" style="font-size:12.5px;color:var(--muted);margin-top:10px;"></p>
+  </div>
+  <div id="aiResultWrap" style="margin-top:20px;"></div>
+  `;
+}
+function bindGenerateAiHandlers(){
+  document.getElementById('genAiBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('ai_title').value.trim() || 'Untitled AI Quiz';
+    const topic = document.getElementById('ai_topic').value.trim();
+    const diff = document.getElementById('ai_diff').value;
+    const count = Math.max(1, Math.min(20, parseInt(document.getElementById('ai_count').value)||5));
+    const notes = document.getElementById('ai_notes').value.trim();
+    if(!topic){ toast('Please enter a topic.'); return; }
+    const status = document.getElementById('aiStatus');
+    status.textContent = 'Generating questions with AI…';
+    document.getElementById('genAiBtn').disabled = true;
+    let questions = await aiGenerateQuiz(notes ? topic+'. '+notes : topic, topic, count, diff);
+    let source = 'ai';
+    if(!questions || !questions.length){
+      status.textContent = 'AI unavailable right now — used topic-based generator instead.';
+      questions = ruleBasedQuiz([topic + '. ' + (notes||'') + '. ' + topic + ' is an important subject with many key ideas, terms, and concepts to understand.'], count, diff);
+      source = 'fallback';
+    } else {
+      status.textContent = `Generated ${questions.length} questions with AI.`;
+    }
+    document.getElementById('genAiBtn').disabled = false;
+    window.__pendingAiQuiz = { title, subject: topic, difficulty: diff, questions, source };
+    document.getElementById('aiResultWrap').innerHTML = `
+      <div class="card pad">
+        <div class="section-title">Generated Questions (${questions.length})</div>
+        ${questions.map((q,i)=>`<div class="q-card"><b>${i+1}. ${escapeHtml(q.text)}</b>
+          ${q.options.map((o,idx)=>`<div class="quiz-opt ${idx===q.answerIndex?'correct':''}" style="cursor:default;"><span class="opt-letter">${String.fromCharCode(65+idx)}</span>${escapeHtml(o)}</div>`).join('')}
+        </div>`).join('')}
+        <button class="btn btn-primary" id="saveAiQuizBtn">💾 Save Quiz</button>
+      </div>`;
+    document.getElementById('saveAiQuizBtn').addEventListener('click', ()=>{
+      const u = currentUser();
+      const data = window.__pendingAiQuiz;
+      const quizzes = getQuizzes();
+      quizzes.push({ id:uid('quiz'), ownerId:u.id, title:data.title, subject:'AI Generated', description:`Auto-generated quiz about "${data.subject}"`, difficulty:data.difficulty, questions:data.questions, createdAt: nowISO(), source:'ai' });
+      saveQuizzes(quizzes);
+      toast('Quiz saved!');
+      go('/my-quizzes');
+    });
+  });
+}
+
+/* ================= UPLOAD POWERPOINT ================= */
+function uploadPptView(){
+  return `
+  <div class="page-head"><h1>Upload PowerPoint</h1><p>Upload a .ppt or .pptx file to create a quiz from your presentation.</p></div>
+  <div class="card pad" style="max-width:640px;">
+    <div class="dropzone" id="dropzone">
+      <div class="icon">☁️</div>
+      <p style="font-weight:600;margin-bottom:4px;">Drag & drop your file here</p>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Supported format: .pptx (max 50MB)</p>
+      <button class="btn btn-outline" id="chooseFileBtn" type="button" style="width:auto;padding:9px 18px;">Choose File</button>
+      <input type="file" id="pptInput" accept=".pptx" class="hidden">
+    </div>
+    <div id="fileInfoWrap"></div>
+    <div id="pptOptionsWrap"></div>
+  </div>
+  `;
+}
+function bindUploadPptHandlers(){
+  const dz = document.getElementById('dropzone');
+  const input = document.getElementById('pptInput');
+  document.getElementById('chooseFileBtn').addEventListener('click', ()=> input.click());
+  dz.addEventListener('click', (e)=>{ if(e.target.id==='dropzone') input.click(); });
+  ['dragenter','dragover'].forEach(ev=> dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=> dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e=>{ if(e.dataTransfer.files.length) handlePptFile(e.dataTransfer.files[0]); });
+  input.addEventListener('change', e=>{ if(e.target.files.length) handlePptFile(e.target.files[0]); });
+}
+async function handlePptFile(file){
+  if(!/\.pptx$/i.test(file.name)){ toast('Please upload a .pptx file.'); return; }
+  pptFileName = file.name;
+  const infoWrap = document.getElementById('fileInfoWrap');
+  infoWrap.innerHTML = `<div class="card pad" style="margin-top:16px;background:var(--surface-2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;gap:10px;align-items:center;"><span style="font-size:20px;">📄</span><div><b style="font-size:13.5px;">${escapeHtml(file.name)}</b><div style="font-size:12px;color:var(--muted);">${(file.size/1024/1024).toFixed(2)} MB</div></div></div>
+      <span id="pptStatusIcon">⏳</span>
+    </div>
+    <div class="progress-bar"><div id="pptProgress" style="width:15%"></div></div>
+    <p id="pptStatusText" style="font-size:12.5px;color:var(--muted);margin-top:8px;">Reading slides…</p>
+  </div>`;
+  try{
+    pptSlides = await extractPptxText(file);
+    document.getElementById('pptProgress').style.width = '100%';
+    document.getElementById('pptStatusIcon').textContent = '✅';
+    document.getElementById('pptStatusText').textContent = `Extracted text from ${pptSlides.length} slide(s).`;
+    if(!pptSlides.length){
+      document.getElementById('pptStatusText').textContent = 'No readable text found in this file.';
+      return;
+    }
+    document.getElementById('pptOptionsWrap').innerHTML = `
+      <div style="margin-top:18px;">
+        <div class="field"><label>Quiz Title</label><input id="ppt_title" value="${escapeHtml(pptFileName.replace(/\.pptx$/i,''))}"></div>
+        <div class="form-row">
+          <div class="field"><label>Number of Questions</label><input id="ppt_count" type="number" min="3" max="20" value="10"></div>
+          <div class="field"><label>Difficulty Level</label><select id="ppt_diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">This feature will try AI question generation; if unavailable, a topic-based generator is used instead.</p>
+        <button class="btn btn-primary" id="genFromPptBtn">Generate Questions</button>
+      </div>
+      <div id="pptResultWrap" style="margin-top:16px;"></div>
+    `;
+    document.getElementById('genFromPptBtn').addEventListener('click', async ()=>{
+      const count = Math.max(1,Math.min(25, parseInt(document.getElementById('ppt_count').value)||10));
+      const diff = document.getElementById('ppt_diff').value;
+      const btn = document.getElementById('genFromPptBtn');
+      btn.disabled = true; btn.textContent = 'Generating…';
+      const combined = pptSlides.join('\n');
+      let questions = await aiGenerateQuiz(combined, pptFileName, count, diff);
+      let source = 'ai';
+      if(!questions || !questions.length){ questions = ruleBasedQuiz(pptSlides, count, diff); source='fallback'; }
+      btn.disabled = false; btn.textContent = 'Generate Questions';
+      window.__pendingPptQuiz = { title: document.getElementById('ppt_title').value.trim() || pptFileName, questions, source };
+      document.getElementById('pptResultWrap').innerHTML = `
+        <div class="card pad">
+          <div class="section-title">Generated Questions (${questions.length}) ${source==='fallback'?'<span class="tag tag-medium">auto</span>':'<span class="tag tag-blue">AI</span>'}</div>
+          ${questions.map((q,i)=>`<div class="q-card"><b>${i+1}. ${escapeHtml(q.text)}</b>
+            ${q.options.map((o,idx)=>`<div class="quiz-opt ${idx===q.answerIndex?'correct':''}" style="cursor:default;"><span class="opt-letter">${String.fromCharCode(65+idx)}</span>${escapeHtml(o)}</div>`).join('')}
+          </div>`).join('')}
+          <button class="btn btn-primary" id="savePptQuizBtn">💾 Save Quiz</button>
+        </div>`;
+      document.getElementById('savePptQuizBtn').addEventListener('click', ()=>{
+        const u = currentUser();
+        const data = window.__pendingPptQuiz;
+        const quizzes = getQuizzes();
+        quizzes.push({ id:uid('quiz'), ownerId:u.id, title:data.title, subject:'From PowerPoint', description:`Generated from ${pptFileName}`, difficulty:diff, questions:data.questions, createdAt: nowISO(), source:'ppt' });
+        saveQuizzes(quizzes);
+        toast('Quiz saved!');
+        go('/my-quizzes');
+      });
+    });
+  }catch(e){
+    document.getElementById('pptStatusIcon').textContent = '❌';
+    document.getElementById('pptStatusText').textContent = 'Could not read this file. Please try another .pptx file.';
+  }
+}
+
+/* ================= MY QUIZZES ================= */
+function myQuizzesView(){
+  const quizzes = myQuizzes();
+  const hist = myHistory();
+  if(!quizzes.length){
+    return `<div class="page-head"><h1>My Quizzes</h1><p>Manage your created quizzes.</p></div>
+    <div class="card"><div class="empty"><div class="icon">📚</div><p>You haven't created any quizzes yet.</p><button class="btn btn-primary" style="width:auto;margin-top:10px;padding:9px 18px;" onclick="go('/create-manual')">Create your first quiz</button></div></div>`;
+  }
+  return `<div class="page-head"><h1>My Quizzes</h1><p>Manage your created quizzes.</p></div>
+  <div class="grid grid-3">
+    ${quizzes.map(q=>{
+      const attempts = hist.filter(h=>h.quizId===q.id);
+      const best = attempts.length ? Math.max(...attempts.map(a=>a.percentage)) : null;
+      return `<div class="card pad">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <b style="font-size:14.5px;">${escapeHtml(q.title)}</b>
+          <span class="tag ${q.difficulty==='Easy'?'tag-easy':q.difficulty==='Hard'?'tag-hard':'tag-medium'}">${q.difficulty||'Medium'}</span>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">${escapeHtml(q.subject||'General')} · ${q.questions.length} questions${best!==null?` · Best ${best}%`:''}</p>
+        <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">${fmtDate(q.createdAt)}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" data-start="${q.id}" style="flex:1;">▶ Start</button>
+          <button class="pill-btn" data-edit="${q.id}">✏ Edit</button>
+          <button class="pill-btn" data-del="${q.id}" style="color:var(--danger);">🗑 Delete</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function bindMyQuizzesHandlers(){
+  document.querySelectorAll('[data-start]').forEach(b=> b.addEventListener('click', ()=> go('/quiz-play?'+b.dataset.start)));
+  document.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> go('/create-manual?'+b.dataset.edit)));
+  document.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=>{
+    if(!confirm('Delete this quiz? This cannot be undone.')) return;
+    saveQuizzes(getQuizzes().filter(q=>q.id!==b.dataset.del));
+    toast('Quiz deleted.');
+    render();
+  }));
+                                                       }
+
+      /* ================= QUIZ PLAYER ================= */
+function quizPlayView(quizId){
+  const quiz = getQuizzes().find(q=>q.id===quizId);
+  if(!quiz) return `<div class="empty"><p>Quiz not found.</p></div>`;
+  if(!quizRuntime || quizRuntime.quiz.id !== quizId){
+    quizRuntime = { quiz, index:0, answers: new Array(quiz.questions.length).fill(null), startedAt: Date.now() };
+  }
+  const q = quiz.questions[quizRuntime.index];
+  const pct = Math.round(((quizRuntime.index)/quiz.questions.length)*100);
+  return `
+  <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div><h1>${escapeHtml(quiz.title)}</h1><p>Question ${quizRuntime.index+1} of ${quiz.questions.length}</p></div>
+    <div style="text-align:right;"><span id="quizTimer" style="font-weight:700;">00:00</span></div>
+  </div>
+  <div class="progress-bar" style="margin-bottom:20px;"><div style="width:${pct}%"></div></div>
+  <div class="card pad" style="max-width:680px;">
+    <b style="font-size:17px;display:block;margin-bottom:16px;">${escapeHtml(q.text)}</b>
+    <div id="optsWrap">
+      ${q.options.map((o,i)=>`<div class="quiz-opt ${quizRuntime.answers[quizRuntime.index]===i?'selected':''}" data-oidx="${i}"><span class="opt-letter">${String.fromCharCode(65+i)}</span>${escapeHtml(o)}</div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:18px;">
+      <button class="btn btn-outline" id="prevBtn" style="width:auto;padding:10px 20px;" ${quizRuntime.index===0?'disabled':''}>← Previous</button>
+      <button class="btn btn-primary" id="nextBtn" style="width:auto;padding:10px 20px;">${quizRuntime.index===quiz.questions.length-1?'Submit':'Next →'}</button>
+    </div>
+  </div>`;
+}
+function bindQuizPlayHandlers(){
+  document.querySelectorAll('#optsWrap .quiz-opt').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      quizRuntime.answers[quizRuntime.index] = +el.dataset.oidx;
+      document.querySelectorAll('#optsWrap .quiz-opt').forEach(o=>o.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+  const prevBtn = document.getElementById('prevBtn');
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{ quizRuntime.index--; render(); });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    if(quizRuntime.answers[quizRuntime.index]===null){ if(!confirm('No answer selected. Continue anyway?')) return; }
+    if(quizRuntime.index < quizRuntime.quiz.questions.length-1){
+      quizRuntime.index++;
+      render();
+    } else {
+      finishQuiz();
+    }
+  });
+  startQuizTimer();
+}
+function startQuizTimer(){
+  clearInterval(quizTimerInt);
+  const timerEl = document.getElementById('quizTimer');
+  quizTimerInt = setInterval(()=>{
+    if(!quizRuntime || !timerEl) { clearInterval(quizTimerInt); return; }
+    const secs = Math.floor((Date.now()-quizRuntime.startedAt)/1000);
+    const m = String(Math.floor(secs/60)).padStart(2,'0'), s = String(secs%60).padStart(2,'0');
+    const el = document.getElementById('quizTimer');
+    if(el) el.textContent = `${m}:${s}`;
+  }, 1000);
+}
+function finishQuiz(){
+  clearInterval(quizTimerInt);
+  const quiz = quizRuntime.quiz;
+  let correct = 0;
+  quiz.questions.forEach((q,i)=>{ if(quizRuntime.answers[i]===q.answerIndex) correct++; });
+  const total = quiz.questions.length;
+  const percentage = Math.round((correct/total)*100);
+  const timeSpentSec = Math.floor((Date.now()-quizRuntime.startedAt)/1000);
+  const u = currentUser();
+  const attempt = { id:uid('att'), ownerId:u.id, quizId:quiz.id, quizTitle:quiz.title, date: nowISO(), correct, total, percentage, timeSpentSec, answers: quizRuntime.answers.slice() };
+  const hist = getHistory(); hist.push(attempt); saveHistory(hist);
+  window.__lastAttempt = attempt;
+  go('/quiz-results');
+}
+
+/* ================= QUIZ RESULTS ================= */
+function quizResultsView(){
+  const att = window.__lastAttempt;
+  if(!att) return `<div class="empty"><p>No recent result.</p></div>`;
+  const pct = att.percentage;
+  const color = pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';
+  const m = Math.floor(att.timeSpentSec/60), s = att.timeSpentSec%60;
+  return `
+  <div class="card pad" style="max-width:520px;margin:0 auto;text-align:center;">
+    <h1 style="margin-bottom:4px;">Quiz Completed!</h1>
+    <p style="color:var(--muted);font-size:13.5px;margin-bottom:20px;">${escapeHtml(att.quizTitle)}</p>
+    <div class="donut" style="margin:0 auto 20px;background:conic-gradient(${color} ${pct*3.6}deg, var(--border) 0deg);">
+      <div class="inner"><b>${pct}%</b><span>${att.correct} / ${att.total}</span></div>
+    </div>
+    <div class="grid grid-4" style="max-width:460px;margin:0 auto 22px;">
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;color:var(--success);">${att.correct}</div><div class="lbl">Correct</div></div>
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;color:var(--danger);">${att.total-att.correct}</div><div class="lbl">Wrong</div></div>
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;">${att.total}</div><div class="lbl">Total</div></div>
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:15px;">${m}:${String(s).padStart(2,'0')}</div><div class="lbl">Time Spent</div></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn btn-primary" style="width:auto;padding:10px 18px;" id="retryBtn">🔁 Try Again</button>
+      <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="go('/quiz-review?${att.quizId}__${att.id}')">📋 Review Answers</button>
+      <button class="btn btn-ghost" style="width:auto;padding:10px 18px;" onclick="go('/dashboard')">🏠 Back to Dashboard</button>
+    </div>
+  </div>`;
+}
+function bindQuizResultsHandlers(){
+  const btn = document.getElementById('retryBtn');
+  if(btn) btn.addEventListener('click', ()=>{ quizRuntime = null; go('/quiz-play?'+window.__lastAttempt.quizId); });
+}
+
+/* ================= REVIEW ANSWERS ================= */
+function quizReviewView(param){
+  let quizId = param, attemptId = null;
+  if(param && param.includes('__')){ [quizId, attemptId] = param.split('__'); }
+  const quiz = getQuizzes().find(q=>q.id===quizId);
+  if(!quiz) return `<div class="empty"><p>Quiz not found.</p></div>`;
+  const attempts = myHistory().filter(h=>h.quizId===quizId);
+  const attempt = attemptId ? attempts.find(a=>a.id===attemptId) : attempts[0];
+  if(!attempt) return `<div class="empty"><p>No attempt found for this quiz yet. <button class="link-btn" onclick="go('/quiz-play?${quizId}')">Take the quiz</button></p></div>`;
+  return `
+  <div class="page-head"><h1>Quiz Review</h1><p>Check your answers and learn from your mistakes.</p></div>
+  <div class="card pad" style="max-width:700px;">
+    ${quiz.questions.map((q,i)=>{
+      const ua = attempt.answers[i];
+      const isCorrect = ua === q.answerIndex;
+      return `<div class="q-card">
+        <div style="display:flex;justify-content:space-between;gap:10px;"><b>${i+1}. ${escapeHtml(q.text)}</b><span class="tag ${isCorrect?'tag-easy':'tag-hard'}">${isCorrect?'Correct':'Incorrect'}</span></div>
+        <p style="font-size:13px;margin-top:8px;">Your answer: <b>${ua!==null? escapeHtml(q.options[ua]) : '(no answer)'}</b></p>
+        ${!isCorrect?`<p style="font-size:13px;color:var(--success);">Correct answer: <b>${escapeHtml(q.options[q.answerIndex])}</b></p>`:''}
+      </div>`;
+    }).join('')}
+    <button class="btn btn-primary" style="width:auto;padding:10px 18px;" onclick="go('/my-quizzes')">Back to My Quizzes</button>
+  </div>`;
+}
+
+/* ================= FLASHCARDS ================= */
+function flashcardsListView(){
+  const decks = myDecks();
+  return `
+  <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+    <div><h1>Flashcards</h1><p>Study with flashcards and remember better.</p></div>
+    <button class="btn btn-primary" style="width:auto;padding:9px 16px;" id="newDeckBtn">+ New Deck</button>
+  </div>
+  <div class="section-title">From my quizzes</div>
+  <div class="grid grid-3" style="margin-bottom:22px;">
+    ${myQuizzes().map(q=>`<div class="card pad">
+      <b style="font-size:14px;">${escapeHtml(q.title)}</b>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 12px;">${q.questions.length} cards</p>
+      <button class="btn btn-primary btn-sm" data-study-quiz="${q.id}" style="width:100%;">Study</button>
+    </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">No quizzes yet.</p>'}
+  </div>
+  <div class="section-title">My decks</div>
+  <div class="grid grid-3">
+    ${decks.map(d=>`<div class="card pad">
+      <b style="font-size:14px;">${escapeHtml(d.title)}</b>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 12px;">${d.cards.length} cards</p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" data-study-deck="${d.id}" style="flex:1;">Study</button>
+        <button class="pill-btn" data-del-deck="${d.id}" style="color:var(--danger);">🗑</button>
+      </div>
+    </div>`).join('') || '<div class="card"><div class="empty"><div class="icon">🗂️</div><p>No custom decks yet. Create one!</p></div></div>'}
+  </div>
+  <div id="deckModalWrap"></div>
+  `;
+}
+function bindFlashcardsListHandlers(){
+  document.querySelectorAll('[data-study-quiz]').forEach(b=> b.addEventListener('click', ()=> go('/flashcards-study?quiz_'+b.dataset.studyQuiz)));
+  document.querySelectorAll('[data-study-deck]').forEach(b=> b.addEventListener('click', ()=> go('/flashcards-study?deck_'+b.dataset.studyDeck)));
+  document.querySelectorAll('[data-del-deck]').forEach(b=> b.addEventListener('click', ()=>{
+    if(!confirm('Delete this deck?')) return;
+    saveDecks(getDecks().filter(d=>d.id!==b.dataset.delDeck));
+    toast('Deck deleted.'); render();
+  }));
+  document.getElementById('newDeckBtn').addEventListener('click', openNewDeckModal);
+}
+let newDeckCards = [];
+function openNewDeckModal(){
+  newDeckCards = [{front:'',back:''}];
+  const wrap = document.getElementById('deckModalWrap');
+  wrap.innerHTML = `<div class="modal-bg" id="deckModalBg"><div class="modal" style="max-width:480px;max-height:82vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h3>New Flashcard Deck</h3><button class="icon-btn" id="closeDeckModal">✕</button></div>
+    <div class="field"><label>Deck Title</label><input id="deck_title" placeholder="e.g. Biology Terms"></div>
+    <div id="deckCardsWrap"></div>
+    <button class="pill-btn" id="addCardBtn" style="margin-bottom:14px;">+ Add Card</button>
+    <button class="btn btn-primary" id="saveDeckBtn">Save Deck</button>
+  </div></div>`;
+  renderDeckCards();
+  document.getElementById('closeDeckModal').addEventListener('click', ()=> document.getElementById('deckModalWrap').innerHTML='');
+  document.getElementById('deckModalBg').addEventListener('click', e=>{ if(e.target.id==='deckModalBg') document.getElementById('deckModalWrap').innerHTML=''; });
+  document.getElementById('addCardBtn').addEventListener('click', ()=>{ newDeckCards.push({front:'',back:''}); renderDeckCards(); });
+  document.getElementById('saveDeckBtn').addEventListener('click', ()=>{
+    const title = document.getElementById('deck_title').value.trim();
+    const cards = newDeckCards.filter(c=>c.front.trim() && c.back.trim()).map(c=>({id:uid('c'), front:c.front, back:c.back, known:false}));
+    if(!title || !cards.length){ toast('Add a title and at least one complete card.'); return; }
+    const u = currentUser();
+    const decks = getDecks();
+    decks.push({ id:uid('deck'), ownerId:u.id, title, cards, createdAt: nowISO() });
+    saveDecks(decks);
+    toast('Deck saved!');
+    document.getElementById('deckModalWrap').innerHTML='';
+    render();
+  });
+}
+function renderDeckCards(){
+  document.getElementById('deckCardsWrap').innerHTML = newDeckCards.map((c,i)=>`
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input data-i="${i}" data-side="front" value="${escapeHtml(c.front)}" placeholder="Front (question)" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);">
+      <input data-i="${i}" data-side="back" value="${escapeHtml(c.back)}" placeholder="Back (answer)" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);">
+    </div>`).join('');
+  document.querySelectorAll('#deckCardsWrap input').forEach(inp=>{
+    inp.addEventListener('input', e=>{ newDeckCards[+e.target.dataset.i][e.target.dataset.side] = e.target.value; });
+  });
+}
+
+function flashcardsStudyView(param){
+  let cards, title;
+  if(param.startsWith('quiz_')){
+    const quiz = getQuizzes().find(q=>q.id===param.slice(5));
+    if(!quiz) return `<div class="empty"><p>Not found.</p></div>`;
+    cards = quiz.questions.map(q=>({ id:q.id, front:q.text, back:q.options[q.answerIndex], known:false }));
+    title = quiz.title;
+  } else {
+    const deck = getDecks().find(d=>d.id===param.slice(5));
+    if(!deck) return `<div class="empty"><p>Not found.</p></div>`;
+    cards = deck.cards;
+    title = deck.title;
+  }
+  if(!deckRuntime || deckRuntime.key !== param){ deckRuntime = { key:param, cards:[...cards], index:0, flipped:false, title }; }
+  const c = deckRuntime.cards[deckRuntime.index];
+  return `
+  <div class="page-head" style="display:flex;justify-content:space-between;align-items:center;">
+    <div><h1>${escapeHtml(deckRuntime.title)}</h1><p>Card ${deckRuntime.index+1} of ${deckRuntime.cards.length}</p></div>
+    <button class="pill-btn" onclick="go('/flashcards')">← Back</button>
+  </div>
+  <div class="flip-card ${deckRuntime.flipped?'flipped':''}" id="flipCard">
+    <div class="flip-inner">
+      <div class="flip-face flip-front">${escapeHtml(c.front)}</div>
+      <div class="flip-face flip-back">${escapeHtml(c.back)}</div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;">
+    <button class="btn btn-outline" style="width:auto;padding:9px 16px;" id="fcPrev">← Previous</button>
+    <button class="btn btn-primary" style="width:auto;padding:9px 16px;" id="fcFlip">🔄 Flip</button>
+    <button class="btn btn-outline" style="width:auto;padding:9px 16px;" id="fcNext">Next →</button>
+  </div>
+  <div style="display:flex;justify-content:center;gap:10px;margin-top:10px;">
+    <button class="pill-btn" id="fcShuffle">🔀 Shuffle</button>
+    <button class="pill-btn" id="fcKnown">${c.known?'✅ Known':'☐ Mark Known'}</button>
+  </div>`;
+}
+function bindFlashcardStudyHandlers(){
+  document.getElementById('flipCard').addEventListener('click', ()=>{ deckRuntime.flipped = !deckRuntime.flipped; render(); });
+  document.getElementById('fcFlip').addEventListener('click', (e)=>{ e.stopPropagation(); deckRuntime.flipped=!deckRuntime.flipped; render(); });
+  document.getElementById('fcPrev').addEventListener('click', ()=>{ deckRuntime.index = (deckRuntime.index-1+deckRuntime.cards.length)%deckRuntime.cards.length; deckRuntime.flipped=false; render(); });
+  document.getElementById('fcNext').addEventListener('click', ()=>{ deckRuntime.index = (deckRuntime.index+1)%deckRuntime.cards.length; deckRuntime.flipped=false; render(); });
+  document.getElementById('fcShuffle').addEventListener('click', ()=>{ deckRuntime.cards = shuffleArr(deckRuntime.cards); deckRuntime.index=0; deckRuntime.flipped=false; toast('Shuffled!'); render(); });
+  document.getElementById('fcKnown').addEventListener('click', ()=>{ deckRuntime.cards[deckRuntime.index].known = !deckRuntime.cards[deckRuntime.index].known; render(); });
+}
+
+/* ================= HISTORY ================= */
+function historyView(){
+  const hist = myHistory();
+  if(!hist.length){
+    return `<div class="page-head"><h1>Quiz History</h1><p>View your completed quizzes and performance.</p></div>
+    <div class="card"><div class="empty"><div class="icon">🕘</div><p>No quiz history yet. Take a quiz to see it here!</p></div></div>`;
+  }
+  return `<div class="page-head"><h1>Quiz History</h1><p>View your completed quizzes and performance.</p></div>
+  <div class="card pad wrap-x"><table>
+  <tr><th>Quiz Title</th><th>Date</th><th>Score</th><th>Percentage</th><th>Correct</th><th></th></tr>
+  ${hist.map(h=>`<tr>
+    <td>${escapeHtml(h.quizTitle)}</td><td>${fmtDate(h.date)}</td><td>${h.correct}/${h.total}</td>
+    <td><span class="tag ${h.percentage>=70?'tag-easy':h.percentage>=50?'tag-medium':'tag-hard'}">${h.percentage}%</span></td>
+    <td>${h.correct}</td>
+    <td><button class="pill-btn" onclick="go('/quiz-review?${h.quizId}__${h.id}')">Review</button></td>
+  </tr>`).join('')}
+  </table></div>`;
+}
+
+/* ================= PROFILE ================= */
+function profileView(){
+  const u = currentUser();
+  const hist = myHistory();
+  const avgScore = hist.length ? Math.round(hist.reduce((s,h)=>s+h.percentage,0)/hist.length) : 0;
+  const initials = (u.name||'?').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  return `
+  <div class="page-head"><h1>Profile</h1><p>Manage your personal information.</p></div>
+  <div class="card pad" style="max-width:560px;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <div class="avatar" style="width:64px;height:64px;font-size:22px;">${initials}</div>
+      <div><b style="font-size:16px;">${escapeHtml(u.name)}</b><p style="font-size:12.5px;color:var(--muted);">@${escapeHtml(u.username)}</p></div>
+    </div>
+    <div class="field"><label>Full Name</label><input id="p_name" value="${escapeHtml(u.name)}"></div>
+    <div class="field"><label>Username</label><input id="p_user" value="${escapeHtml(u.username)}"></div>
+    <div class="field"><label>Email</label><input id="p_email" value="${escapeHtml(u.email)}"></div>
+    <button class="btn btn-primary" id="saveProfileBtn" style="width:auto;padding:10px 18px;">Save Changes</button>
+    <div class="nav-sep"></div>
+    <div class="section-title">Change Password</div>
+    <div class="field"><label>Current Password</label><input type="password" id="p_curpass"></div>
+    <div class="field"><label>New Password</label><input type="password" id="p_newpass"></div>
+    <button class="btn btn-outline" id="changePassBtn" style="width:auto;padding:10px 18px;">Change Password</button>
+    <div class="nav-sep"></div>
+    <div class="grid grid-3">
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;">${myQuizzes().length}</div><div class="lbl">Total Quizzes</div></div>
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;">${hist.length}</div><div class="lbl">Completed Quizzes</div></div>
+      <div class="card pad" style="padding:12px;"><div class="num" style="font-size:18px;">${avgScore}%</div><div class="lbl">Average Score</div></div>
+    </div>
+  </div>`;
+}
+function bindProfileHandlers(){
+  document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
+    const u = currentUser();
+    const users = getUsers();
+    const name = document.getElementById('p_name').value.trim();
+    const username = document.getElementById('p_user').value.trim();
+    const email = document.getElementById('p_email').value.trim();
+    if(!name || !username || !email){ toast('All fields are required.'); return; }
+    if(users.some(x=>x.id!==u.id && x.username.toLowerCase()===username.toLowerCase())){ toast('Username already taken.'); return; }
+    const idx = users.findIndex(x=>x.id===u.id);
+    users[idx] = {...users[idx], name, username, email };
+    saveUsers(users);
+    toast('Profile updated!');
+    render();
+  });
+  document.getElementById('changePassBtn').addEventListener('click', ()=>{
+    const u = currentUser();
+    const cur = document.getElementById('p_curpass').value;
+    const nw = document.getElementById('p_newpass').value;
+    if(simpleHash(cur) !== u.password){ toast('Current password is incorrect.'); return; }
+    if(nw.length<4){ toast('New password must be at least 4 characters.'); return; }
+    const users = getUsers();
+    const idx = users.findIndex(x=>x.id===u.id);
+    users[idx].password = simpleHash(nw);
+    saveUsers(users);
+    toast('Password changed!');
+    document.getElementById('p_curpass').value=''; document.getElementById('p_newpass').value='';
+  });
+}
+
+/* ================= SETTINGS ================= */
+function settingsView(){
+  const s = mySettings();
+  const theme = dbGet(DB_KEYS.THEME,'system');
+  return `
+  <div class="page-head"><h1>Settings</h1><p>Manage your account and preferences.</p></div>
+  <div class="card pad" style="max-width:560px;">
+    <div class="section-title">Notification Settings</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div><b style="font-size:13.5px;">Email Notifications</b><p style="font-size:12px;color:var(--muted);">Get notified about your quiz activity</p></div>
+      <button class="toggle ${s.emailNotif?'on':''}" id="toggleEmail"><div class="knob"></div></button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div><b style="font-size:13.5px;">Quiz Reminders</b><p style="font-size:12px;color:var(--muted);">Remind me to take quizzes</p></div>
+      <button class="toggle ${s.quizReminders?'on':''}" id="toggleReminder"><div class="knob"></div></button>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="section-title">Theme Settings</div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button class="pill-btn ${theme==='light'?'':''}" id="lightModeBtn" style="flex:1;${theme==='light'?'border-color:var(--primary);color:var(--primary);':''}">☀️ Light Mode</button>
+      <button class="pill-btn" id="darkModeBtn" style="flex:1;${theme==='dark'?'border-color:var(--primary);color:var(--primary);':''}">🌙 Dark Mode</button>
+    </div>
+    <div class="nav-sep"></div>
+    <button class="btn btn-danger" id="settingsLogoutBtn">🚪 Logout</button>
+  </div>`;
+}
+function bindSettingsHandlers(){
+  document.getElementById('toggleEmail').addEventListener('click', ()=>{ const s=mySettings(); s.emailNotif=!s.emailNotif; saveSettings(s); render(); });
+  document.getElementById('toggleReminder').addEventListener('click', ()=>{ const s=mySettings(); s.quizReminders=!s.quizReminders; saveSettings(s); render(); });
+  document.getElementById('lightModeBtn').addEventListener('click', ()=>{ dbSet(DB_KEYS.THEME,'light'); applyTheme(); render(); });
+  document.getElementById('darkModeBtn').addEventListener('click', ()=>{ dbSet(DB_KEYS.THEME,'dark'); applyTheme(); render(); });
+  document.getElementById('settingsLogoutBtn').addEventListener('click', ()=>{ setSession(null); toast('Logged out.'); go('/login'); });
+}
+
+/* ================= PAGE HANDLER DISPATCH ================= */
+function bindPageHandlers(path){
+  const [p, param] = path.split('?');
+  if(p==='/create-manual') bindManualQuizHandlers(param);
+  else if(p==='/generate-ai') bindGenerateAiHandlers();
+  else if(p==='/upload-ppt') bindUploadPptHandlers();
+  else if(p==='/my-quizzes') bindMyQuizzesHandlers();
+  else if(p==='/quiz-play') bindQuizPlayHandlers();
+  else if(p==='/quiz-results') bindQuizResultsHandlers();
+  else if(p==='/flashcards') bindFlashcardsListHandlers();
+  else if(p==='/flashcards-study') bindFlashcardStudyHandlers();
+  else if(p==='/profile') bindProfileHandlers();
+  else if(p==='/settings') bindSettingsHandlers();
+}
+</script>
+</body>
+</html>
